@@ -1,14 +1,13 @@
-from __future__ import annotations
 import psutil
 import time
 import os
 import sys
 import shutil
 import datetime
-from typing import Literal
-from alarms import AlarmStore, ThresholdAlarm  # <- import från alarms.py
+from alarms import AlarmStore   # import från alarms.py
 
-# ===================== Terminalhjälp =====================
+# clears terminal, cls for windows and clear for unix
+
 def clear():
     try:
         os.system("cls" if os.name == "nt" else "clear")
@@ -26,6 +25,8 @@ def clear_line():
     sys.stdout.flush()
 
 width = shutil.get_terminal_size().columns if sys.stdout.isatty() else 80
+
+# so you can press any key and you go back to the menu, works on both unix and windows
 
 IS_WINDOWS = (os.name == "nt")
 if IS_WINDOWS:
@@ -46,9 +47,7 @@ else:
         except:
             pass
 
-# ===================== Mätning & formattering =====================
 def format_bytes(b, unit="GB", decimals=2):
-    """Konvertera bytes till KB eller GB (binärt: 1KB=1024 byte)."""
     factor = 1024 if unit.upper() == "KB" else 1024**3
     return f"{b / factor:.{decimals}f} {unit.upper()}"
 
@@ -78,7 +77,6 @@ def display_usage(cpu_usage, mem_usage, disk_usage, bars=20, selected=None):
             "RAM:  "
             f"|{mem_bar}| {mem_usage:6.2f}% "
             f"({format_bytes(mem_used_bytes, 'GB')} / {format_bytes(mem_total_bytes, 'GB')} | "
-            f"{format_bytes(mem_used_bytes, 'KB')} / {format_bytes(mem_total_bytes, 'KB')})"
         )
 
     if show_all or 'disk' in (selected or []):
@@ -86,7 +84,6 @@ def display_usage(cpu_usage, mem_usage, disk_usage, bars=20, selected=None):
             "Disk: "
             f"|{disk_bar}| {disk_usage:6.2f}% "
             f"({format_bytes(disk_used_bytes, 'GB')} / {format_bytes(disk_total_bytes, 'GB')} | "
-            f"{format_bytes(disk_used_bytes, 'KB')} / {format_bytes(disk_total_bytes, 'KB')})"
         )
 
     print("\r" + "   ".join(parts), end="\r")
@@ -97,7 +94,6 @@ def read_metric():
     disk = psutil.disk_usage('/').percent
     return cpu, mem, disk
 
-# ===================== Larm-funktioner (använder AlarmStore) =====================
 def format_alarm_dict(a: dict) -> str:
     label = {"cpu": "CPU", "mem": "Memory", "disk": "Disk"}[a["type"]]
     return f"{label} ≥ {a['threshold']:.1f}%"
@@ -113,23 +109,32 @@ def list_alarms(mgr: AlarmStore):
             print(f"  {i}. {format_alarm_dict(a)}")
 
 def remove_alarm(mgr: AlarmStore):
-    alarms = mgr.list()
-    if not alarms:
+    while True:
+        alarms = mgr.list()
         clear()
-        print("No alarms configured.")
+        if not alarms:       
+            print("No alarms configured.")
+            return
+        list_alarms(mgr)
+        s = input("what number do you want to remove? Press just Enter do go back to menu: \n").strip()
+        if s == "":
+            clear()
+            return
+        if not s.isdigit():
+            print("Put in a valid number.")
+            time.sleep(2)
+            continue
+        i = int(s) - 1
+        if not 0 <= i < len(alarms):
+            print("Put in a valid number.")
+            time.sleep(2)
+            continue
+        if 0 <= i < len(alarms):
+            removed = mgr.remove_index(i)
+            clear()
+            print(f"Removed: {format_alarm_dict(removed.to_dict())}")
         return
-    list_alarms(mgr)
-    s = input("what number do you want to remove? If you put an invalid number or something else you will go back to the menu:\n").strip()
-    if not s.isdigit():
-        clear()
-        print("Put in a valid number.")
-        return
-    i = int(s) - 1
-    if 0 <= i < len(alarms):
-        removed = mgr.remove_index(i)
-        clear()
-        print(f"Removed: {format_alarm_dict(removed.to_dict())}")
-        return
+        
 
 def add_alarm(mgr: AlarmStore):
     while True:
@@ -137,13 +142,14 @@ def add_alarm(mgr: AlarmStore):
   1 - CPU usage
   2 - Memory usage
   3 - Disk usage
-(Press Enter to go back to menu)""")
+(Press Enter 2 times to go back to menu)""")
         choice = input("Enter 1,2,3: ").strip()
         mapping = {"1": "cpu", "2": "mem", "3": "disk"}
 
         if choice == "":
             break
         if choice not in mapping:
+            clear()
             print("Please choose 1 (CPU), 2 (Memory), or 3 (Disk).")
             continue
 
@@ -209,7 +215,7 @@ def live_monitor(mgr: AlarmStore, with_alarms=False):
     clear()
     print("monitoring has ended, do you maybe want to change the alarms?")
 
-# ===================== Meny/entrypoint =====================
+# so the class can comunicate with other parts
 def main(mgr: AlarmStore):
     while True:
         menu_choice = input("""
