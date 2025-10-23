@@ -12,9 +12,6 @@ class ThresholdAlarm:
         return asdict(self)
 
 class AlarmStore:
-    """
-    writing new and old alarms to json file so the program can use it for later
-    """
     def __init__(self, json_path: Path | str = "alarms.json") -> None:
         self.path = Path(json_path)
         self.alarms: List[ThresholdAlarm] = []
@@ -56,3 +53,4 @@ class AlarmStore:
 
     def is_empty(self) -> bool:
         return len(self.alarms) == 0
+
