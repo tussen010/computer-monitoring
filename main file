@@ -168,9 +168,6 @@ def add_alarm(mgr: AlarmStore):
         clear()
         print(f"Alarm added: {format_alarm_dict(a.to_dict())}\n")
 
-
-
-
 def check_alarms(mgr: AlarmStore, cpu, mem, disk):
     fired = []
     for a in mgr.alarms:
@@ -180,9 +177,6 @@ def check_alarms(mgr: AlarmStore, cpu, mem, disk):
             fired.append(("Memory", mem, a.threshold))
         elif a.type == "disk" and disk >= a.threshold:
             fired.append(("Disk", disk, a.threshold))
-
-            #larm händer
-
 
     if fired:
         print()
@@ -194,8 +188,6 @@ def check_alarms(mgr: AlarmStore, cpu, mem, disk):
         pygame.mixer.music.load(r"alarmassets\alarmsound.mp3")
         pygame.mixer.music.play()
 
-        
-        
 def live_monitor(mgr: AlarmStore, with_alarms=False):
     if with_alarms and mgr.is_empty():
         print("No alarms on. Please create an alarm first (menu option 3).")
@@ -219,7 +211,6 @@ def live_monitor(mgr: AlarmStore, with_alarms=False):
                 consume_key()
                 clear()
                 break
-
             time.sleep(0.5)
     except KeyboardInterrupt:
         pass
