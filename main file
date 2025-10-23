@@ -1,9 +1,11 @@
+
 import psutil
 import time
 import os
 import sys
 import shutil
 import datetime
+import pygame
 from alarms import AlarmStore   # import från alarms.py
 
 # clears terminal, cls for windows and clear for unix
@@ -167,6 +169,9 @@ def add_alarm(mgr: AlarmStore):
         clear()
         print(f"Alarm added: {format_alarm_dict(a.to_dict())}\n")
 
+
+
+
 def check_alarms(mgr: AlarmStore, cpu, mem, disk):
     fired = []
     for a in mgr.alarms:
@@ -177,13 +182,21 @@ def check_alarms(mgr: AlarmStore, cpu, mem, disk):
         elif a.type == "disk" and disk >= a.threshold:
             fired.append(("Disk", disk, a.threshold))
 
+            #larm händer
+
+
     if fired:
         print()
         ts = datetime.datetime.now().strftime("%H:%M:%S")
         for label, value, thr in fired:
-            print(f"[{ts}] WARNING ALARM!!!: {label} {value:.1f}% (Alarm set at: {thr:.1f}%)")
+            print(f"[{ts}] WARNING ALARM!!!: {label} {value:.1f}% (Alarm set at: {thr:.1f}%)", flush=True)
         print()
+        pygame.mixer.init()
+        pygame.mixer.music.load(r"alarmassets\alarmsound.mp3")
+        pygame.mixer.music.play()
 
+        
+        
 def live_monitor(mgr: AlarmStore, with_alarms=False):
     if with_alarms and mgr.is_empty():
         print("No alarms on. Please create an alarm first (menu option 3).")
